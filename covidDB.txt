@@ -1,0 +1,243 @@
+drop database covidDB;
+create database covidDB;
+
+CREATE TABLE Company(
+CName		VARCHAR(20)	NOT NULL,
+CStreet	 	VARCHAR(40),
+CCity		VARCHAR(20),
+CProvince	VARCHAR(20),
+CZip		CHAR(6),
+PRIMARY KEY(CName));	
+
+CREATE TABLE Vaccine(
+Lot		VARCHAR(20)	NOT NULL,
+CName		VARCHAR(20)	NOT NULL, /*(1,N) relationship between Company and Vaccine*/
+Expire_Date	DATE		NOT NULL, 
+Production_Date	DATE		NOT NULL,
+Number_Doses	INTEGER,
+PRIMARY KEY(Lot),
+FOREIGN KEY(CName) REFERENCES Company(CName)); 
+
+CREATE TABLE Patient(
+POhip		CHAR(10)		NOT NULL,
+PFName		VARCHAR(20),
+PLName		VARCHAR(20),
+Date_Of_Bitrh	DATE,
+PRIMARY KEY(POhip));
+
+CREATE TABLE Spouse(
+Ohip		CHAR(10)		NOT NULL,
+POhip		CHAR(10)		NOT NULL, -- (1,1) relation between patient and spouse
+SFName		VARCHAR(20),
+SLName		VARCHAR(20),
+Phone_Number	CHAR(10),
+PRIMARY KEY(Ohip),
+FOREIGN KEY(POhip) REFERENCES Patient(POhip) on delete cascade); /*when the patient is deleted, the spouse is also deleted*/
+
+CREATE TABLE Vax_Clinic(
+VName		VARCHAR(30)	NOT NULL,
+VAddress		VARCHAR(40),
+VCity		VARCHAR(20),
+VProvince	VARCHAR(20),
+VZip		CHAR(6),
+PRIMARY KEY(VName));
+
+CREATE TABLE Practice(
+MName		VARCHAR(40)	NOT NULL,
+MPhone		CHAR(10),
+PRIMARY KEY(MName));
+
+CREATE TABLE Doctor( 
+DID		CHAR(10)		NOT NULL,
+MName		VARCHAR(40), /*(1,N) relationship between doctor and pracitce*/ 
+DOC_FName	VARCHAR(20),	
+DOC_LName	VARCHAR(20),	
+PRIMARY KEY(DID),
+FOREIGN KEY(MName) REFERENCES Practice(MName) ON DELETE SET NULL);
+
+CREATE TABLE Doc_Credentials( /*multivalue attribute credentials*/
+DID		CHAR(10)		NOT NULL,
+Doc_Cred		VARCHAR(10)	NOT NULL,
+PRIMARY KEY(DID, Doc_Cred),
+FOREIGN KEY(DID) REFERENCES Doctor(DID) on delete cascade); /*if doc is not exist, it doesn't matter the credentials are still exist*/
+
+CREATE TABLE Nurse(
+NID		CHAR(10)		NOT NULL,
+Nurse_FName	VARCHAR(20),
+Nurse_LName	VARCHAR(20),
+PRIMARY KEY(NID));
+
+CREATE TABLE Nurse_Credentials( /*multivalue attribute credentials*/
+NID		CHAR(10)		NOT NULL,
+Nurse_Cred	VARCHAR(30)	NOT NULL,
+PRIMARY KEY(NID,Nurse_Cred),
+FOREIGN KEY(NID) REFERENCES Nurse(NID) on delete cascade);
+
+
+/* -----------------Below is the relationship------------------ */ 
+
+CREATE TABLE Ship_To( -- (N,M) relationship between vaccine and vax_clinic 
+Lot		VARCHAR(20)	NOT NULL,
+VName		VARCHAR(30)	NOT NULL,
+PRIMARY KEY(Lot, VName),
+FOREIGN KEY(Lot) REFERENCES Vaccine(Lot),
+FOREIGN KEY(VName) REFERENCES Vax_Clinic(VName));
+
+CREATE TABLE Vaccination( /*ternary relationship among Patient, Vaccine, Vax_Clinic*/
+Lot		VARCHAR(20)	NOT NULL,
+POhip		CHAR(10)		NOT NULL,
+VName		VARCHAR(30)	NOT NULL,		
+Date		DATE,
+Time		TIME, 
+PRIMARY KEY(Lot, POhip, VName),
+FOREIGN KEY(Lot) REFERENCES Vaccine(Lot),
+FOREIGN KEY(POhip)REFERENCES Patient(POhip),
+FOREIGN KEY(VName) REFERENCES Vax_Clinic(VName));
+
+CREATE TABLE Doc_Work_At( /*(N,M) relationship between vax clinic and doctor*/
+DID		CHAR(10)		NOT NULL,
+VName		VARCHAR(30)	NOT NULL,
+PRIMARY KEY(DID,VName),
+FOREIGN KEY(DID) REFERENCES Doctor(DID),
+FOREIGN KEY(VName) REFERENCES Vax_Clinic(VName));
+
+
+CREATE TABLE Nurse_Work_At( /*(N,M) relationship between vax clinic and nurse*/
+NID		CHAR(10)		NOT NULL,
+VName		VARCHAR(30)	NOT NULL,
+PRIMARY KEY(NID,VName),
+FOREIGN KEY(NID) REFERENCES Nurse(NID),
+FOREIGN KEY(VName) REFERENCES Vax_Clinic(VName));
+
+/* -----------------Below is the inserted value info------------------ */ 
+
+insert into Company values
+('Pfizer','234 Queen Blvd','Toronto','Ontario','T9L0J9'),
+('Moderna','332 King St', 'Ottawa','Ontario','O9S8I0'),
+('Astrazeneca','45 Diamond St', 'Oshawa','Ontario','O9U8J0'),
+('Johnson & Johnson','899 Heart Blvd','Kingston','Ontario','K9I0Y7')
+;
+
+insert into Vaccine values
+('ABC123', 'Pfizer', '2021-12-23', '2021-12-13', '2300'),
+('BVC143', 'Pfizer', '2021-12-22', '2021-12-12', '130'),
+('035A21B', 'Moderna', '2022-01-01', '2022-12-12', '500'),
+('982B31B', 'Moderna', '2021-01-02', '2022-12-15', '1326'),
+('MT007', 'Astrazeneca', '2021-12-23', '2021-12-13', '1482'),
+('JJ1805022', 'Johnson & Johnson', '2021-12-23', '2021-12-13', '894')
+;
+
+insert into Patient values
+('5584403859', 'Abe', 'Smith','1987-12-04'),
+('4472334849', 'Dive', 'Dave', '1982-02-02'),
+('5583920489','Emma','Stone','1997-04-23'),
+('3840278402','William','Smith','1988-05-21'),
+('3294028402','Jane','Austin','1992-06-28'),
+('2834958204','Darwin','Austin', '1991-04-23')
+;
+
+insert into Spouse values
+('4837295938','5584403859','Sophie','Smith','4379840205'),
+('5548204820','4472334849','Sarah','Dave','4528372938'),
+('5573491278','5583920489','Max','Stone','5223890203'),
+('5427394882','2834958204','Olivia','Austin','1990-02-28')
+;
+
+insert into Vax_Clinic values
+('Community Homes','532 Princess St','Kingston','Ontario','K9I8Y8'),
+('Sunshine Clinic','12 Division St Unit11','Kingston','Ontario','K9H9T5'),
+('Health Point','77 Andrew St Unit1','Toronto','Ontario','T7U8I9'),
+('Angles Community','223 Albert St','Toronto','Ontario','T6Y8U9'),
+('Health Foundation Plan','93 Harries St','Ottawa','Ontario','O9U0T5'),
+('Family Health Center','432 Connor St Unit 8','Hamilton','Ontario','H8T7G8')
+; 
+
+insert into Practice values
+('Group Practice','4379283729'),
+('Locus Tenens','4563782910'),
+('Integrated Delivery System','4527362819'),
+('Hospital-based Work','4537261892'),
+('Health Maintenance','4237362829'),
+('Private Practice','4372871920')
+;
+ 
+insert into Doctor values
+('LL92837451','Group Practice','Mia','Yang'),
+('ER29389948','Locus Tenens','Joanna','Smith'),
+('LP93844342','Private Practice','Peter','White'),
+('HL39483044','Integrated Delivery System','Bob','Lee'),
+('LP29384420','Health Maintenance','Ashley','Miller'),
+('ZQ92833021','Hospital-based Work','Melody','Clark'),
+('XL29388409','Locus Tenens','Main','Clear')
+;
+
+insert into Doc_Credentials values
+('LL92837451','BS'),
+('LL92837451','MB'),
+('ER29389948','MD'),
+('LP93844342','MD'),
+('LP93844342','CM'),
+('HL39483044','DPM')
+;
+
+insert into Nurse values
+('P39283908O','Lena','Smith'),
+('L93842293P','Nicole','Green'),
+('J93844472I','Tom','Taylor'),
+('A93840023L','Lucy','White'),
+('O22098934I','Paul','Miller'),
+('S93840089K','Alen','Lee')
+;
+
+insert into Nurse_Credentials values
+('P39283908O','APRN'),
+('P39283908O','MP'),
+('J93844472I','APRN'),
+('L93842293P','APRN'),
+('A93840023L','APRN'),
+('A93840023L','CNS')
+;
+
+/* -----------------Below is the relationship------------------ */ 
+insert into Ship_To values
+('ABC123','Community Homes'),
+('BVC143','Community Homes'),
+('035A21B','Sunshine Clinic'),
+('982B31B','Sunshine Clinic'),
+('MT007','Health Foundation Plan'),
+('MT007','Family Health Center')
+;
+
+insert into Vaccination values
+('ABC123','5584403859','Community Homes','2021-12-02','10:13:59'),
+('BVC143','4472334849','Community Homes','2021-11-02','09:23:17'),
+('BVC143','5583920489','Community Homes','2021-12-12','12:23:09'),
+('035A21B','5583920489','Sunshine Clinic','2021-05-22','15:22:01'),
+('982B31B','3840278402','Sunshine Clinic','2022-01-03','13:22:23'),
+('MT007','3840278402','Family Health Center','2022-01-11','15:16:24')
+;
+
+insert into Doc_Work_At values
+('LL92837451','Community Homes'),
+('ER29389948','Sunshine Clinic'),
+('LP93844342','Sunshine Clinic'),
+('HL39483044','Health Foundation Plan'),
+('LP29384420','Angles Community'),
+('ZQ92833021','Family Health Center')
+;
+
+
+insert into Nurse_Work_At values
+('P39283908O','Community Homes'),
+('L93842293P','Sunshine Clinic'),
+('J93844472I','Sunshine Clinic'),
+('A93840023L','Health Point'),
+('O22098934I','Angles Community'),
+('S93840089K','Family Health Center')
+;
+
+
+
+
+
+
